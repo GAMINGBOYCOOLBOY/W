@@ -1,3 +1,10 @@
+let obfuscatorSettings = {
+    antiBeautify: true,
+    antiTamper: true,
+    maxProtection: true,
+    constantDump: true
+};
+
 function obfuscateScript() {
     const luaScript = document.getElementById('lua-script').value;
     if (!luaScript) {
@@ -19,66 +26,100 @@ function randomString(length) {
     return result;
 }
 
-function obfuscateLua(script) {
-    const throwAway = [];
-    for (let i = 0; i < script.length; i++) {
-        throwAway.push(script.charCodeAt(i));
-    }
-
-    let stringBuffer = '';
-    for (const byte of throwAway) {
-        stringBuffer += `\\${byte}`;
-    }
-
-    const randomVariable = randomString(10);
-    const randomCheck = randomString(10);
-    const randomEnv = randomString(10);
-
-    const obfuscated = `
-        local ${randomCheck} = function()
-            local success = pcall(function() end)
-            if not success then
-                error("Anti-tamper triggered!")
-            end
-        end
-
-        ${randomCheck}()
-
-        local ${randomVariable} = loadstring("${stringBuffer}")()
-        setfenv(${randomVariable}, setmetatable({}, {
-            __index = function(_, key)
-                if key == "debug" or key == "os" or key == "io" or key == "package" then
-                    return nil
-                end
-                return _G[key]
-            end,
-            __newindex = function(_, key, value)
-                if key == "debug" or key == "os" or key == "io" or key == "package" then
-                    return
-                end
-                rawset(_, key, value)
-            end
-        }))
-
-        local ${randomEnv} = {
-            print = function(...)
-                local args = {...}
-                for i = 1, #args do
-                    args[i] = tostring(args[i]):gsub(".", function(c)
-                        return string.format("\\%03d", c:byte())
-                    end)
-                end
-                _G.print(table.concat(args, " "))
-            end
-        }
-
-        setmetatable(_G, {
-            __index = ${randomEnv},
-            __newindex = function() end
-        })
-
-        ${randomVariable}()
-    `;
-
-    return obfuscated.replace(/\s+/g, ' ');
+function escapeString(str) {
+    return str.replace(/[\\"]/g, '\\$&').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t').replace(/\v/g, '\\v');
 }
+
+function obfuscateLua(script) {
+    const randomVariable = randomString(10);
+
+    // Split the script into chunks to avoid issues with large scripts
+    const chunks = splitIntoChunks(script, 1000);
+
+    let obfuscatedScript = `local ${randomVariable} = function(chunk)\n`;
+    obfuscatedScript += `    local success, chunk = pcall(function() return loadstring(chunk) end)\n`;
+    obfuscatedScript += `    if not success or not chunk then\n`;
+    obfuscatedScript += `        error("Failed to load chunk!")\n`;
+    obfuscatedScript += `    end\n`;
+    obfuscatedScript += `    chunk()\n`;
+    obfuscatedScript += `end\n\n`;
+
+    for (let chunk of chunks) {
+        obfuscatedScript += `${randomVariable}("${escapeString(chunk)}")\n`;
+    }
+
+    obfuscatedScript += `\n`;
+
+    if (obfuscatorSettings.maxProtection) {
+        obfuscatedScript += `local env = {}\n`;
+        obfuscatedScript += `setmetatable(env, {\n`;
+        obfuscatedScript += `    __index = function(_, key)\n`;
+        obfuscatedScript += `        if key == "debug" or key == "os" or key == "io" or key == "package" then\n`;
+        obfuscatedScript += `            return nil\n`;
+        obfuscatedScript += `        end\n`;
+        obfuscatedScript += `        return _G[key]\n`;
+        obfuscatedScript += `    end,\n`;
+        obfuscatedScript += `    __newindex = function(_, key, value)\n`;
+        obfuscatedScript += `        if key == "debug" or key == "os" or key == "io" or key == "package" then\n`;
+        obfuscatedScript += `            return\n`;
+        obfuscatedScript += `        end\n`;
+        obfuscatedScript += `        rawset(_, key, value)\n`;
+        obfuscatedScript += `    end\n`;
+        obfuscatedScript += `})\n\n`;
+    }
+
+    if (obfuscatorSettings.constantDump) {
+        obfuscatedScript += `local constantDump = function() end\n`;
+        obfuscatedScript += `debug.setmetatable(constantDump, {\n`;
+        obfuscatedScript += `    __tostring = function()\n`;
+        obfuscatedScript += `        return "Constant dumped"\n`;
+        obfuscatedScript += `    end,\n`;
+        obfuscatedScript += `    __index = function(_, key)\n`;
+        obfuscatedScript += `        return constantDump\n`;
+        obfuscatedScript += `    end,\n`;
+        obfuscatedScript += `    __newindex = function() end\n`;
+        obfuscatedScript += `})\n\n`;
+    }
+
+    obfuscatedScript += `${randomVariable}()\n`;
+
+    return obfuscatedScript;
+}
+
+function splitIntoChunks(str, chunkSize) {
+    const chunks = [];
+    for (let i = 0; i < str.length; i += chunkSize) {
+        chunks.push(str.substring(i, i + chunkSize));
+    }
+    return chunks;
+}
+
+function enableDisableObfuscation() {
+    const enableBtn = document.getElementById('enable-obfuscation');
+    const disableBtn = document.getElementById('disable-obfuscation');
+
+    enableBtn.addEventListener('click', function() {
+        obfuscatorSettings = {
+            antiBeautify: true,
+            antiTamper: true,
+            maxProtection: true,
+            constantDump: true
+        };
+        enableBtn.disabled = true;
+        disableBtn.disabled = false;
+    });
+
+    disableBtn.addEventListener('click', function() {
+        obfuscatorSettings = {
+            antiBeautify: false,
+            antiTamper: false,
+            maxProtection: false,
+            constantDump: false
+        };
+        enableBtn.disabled = false;
+        disableBtn.disabled = true;
+    });
+}
+
+// Initialize enable/disable buttons
+enableDisableObfuscation();
