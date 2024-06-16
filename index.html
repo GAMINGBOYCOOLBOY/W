@@ -3,18 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lua Obfuscator</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Obfuscator</title>
 </head>
 <body>
-    <div class="container">
-        <h1>Lua Obfuscator</h1>
-        <form id="obfuscator-form">
-            <textarea id="lua-script" placeholder="Paste your Lua script here..."></textarea>
-            <button type="button" onclick="obfuscateScript()">Obfuscate</button>
-        </form>
-        <textarea id="obfuscated-script" readonly></textarea>
-    </div>
+    <textarea id="lua-script" rows="10" cols="80" placeholder="Enter Lua script..."></textarea><br>
+    <button onclick="obfuscateScript()">Obfuscate Lua</button><br>
+    <textarea id="obfuscated-script" rows="10" cols="80" readonly placeholder="Obfuscated Lua script..."></textarea><br>
+    <button id="enable-obfuscation">Enable Obfuscation</button>
+    <button id="disable-obfuscation" disabled>Disable Obfuscation</button>
     <script src="scripts.js"></script>
 </body>
 </html>
