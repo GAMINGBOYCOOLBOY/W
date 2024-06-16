@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lua Obfuscator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 50px;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+        .file-input {
+            margin: 20px 0;
+        }
+        .loading-bar {
+            width: 100%;
+            background-color: #ddd;
+            margin: 20px 0;
+            display: none;
+        }
+        .loading-bar-inner {
+            height: 30px;
+            width: 0;
+            background-color: #4caf50;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+        }
+        .download-button {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lua Obfuscator</h1>
+        <input type="file" id="fileInput" class="file-input">
+        <button onclick="uploadFile()">Obfuscate</button>
+        <div class="loading-bar" id="loadingBar">
+            <div class="loading-bar-inner" id="loadingBarInner">0%</div>
+        </div>
+        <a id="downloadLink" class="download-button" href="#" download="obfuscated.lua">Download Obfuscated File</a>
+    </div>
+
+    <script>
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length === 0) {
+                alert('Please select a file!');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
+
+            xhr.upload.onprogress = function (event) {
+                if (event.lengthComputable) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    const loadingBarInner = document.getElementById('loadingBarInner');
+                    loadingBarInner.style.width = percentComplete + '%';
+                    loadingBarInner.innerText = Math.round(percentComplete) + '%';
+                    document.getElementById('loadingBar').style.display = 'block';
+                }
+            };
+
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const blob = new Blob([xhr.response], { type: 'text/plain' });
+                    const downloadLink = document.getElementById('downloadLink');
+                    downloadLink.href = window.URL.createObjectURL(blob);
+                    downloadLink.style.display = 'block';
+                } else {
+                    alert('File upload failed!');
+                }
+            };
+
+            xhr.responseType = 'blob';
+            xhr.send(formData);
+        }
+    </script>
+</body>
+</html>
