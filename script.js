@@ -33,7 +33,7 @@ function obfuscateLua(script) {
     const randomVariable = randomString(10);
     const randomCheck = randomString(10);
     const randomEnv = randomString(10);
-    
+
     const obfuscated = `
         local ${randomCheck} = function()
             local success = pcall(function() end)
